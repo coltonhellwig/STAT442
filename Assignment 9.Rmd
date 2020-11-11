@@ -1,0 +1,165 @@
+---
+title: '2019 Pittsburgh Steelers: What Are The Keys to victory in 2020?'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+Steelers_Data <- read_excel("C:/Users/student/OneDrive - South Dakota State University - SDSU/Junior Classes/STAT 442/Steelers Data.xlsx")
+steelers <- Steelers_Data
+summary(steelers)
+```
+
+Some random stats:
+Record: 8-8
+Lost first 3 games and last 3 games of the season. They were 8-2 in between. 
+Combined record of teams they played when they faced them: 56-63-1 (.475)
+Combined record of teams they played at the end of the season: 128-127-1 (.502)
+Total Point For: 289
+Total Points Against: 303
+Total Yards For: 4428
+Total Yards Against: 4866
+Turnover Ratio: +8 (38-30)
+Led the league in sacks (54)
+
+
+
+*** Making data sets separating games they won and games they lost ***
+
+```{r}
+library(dplyr)
+win <- steelers %>% filter(Win_Loss == "Win")
+win
+
+loss <- steelers %>% filter(Win_Loss == "Loss")
+loss
+```
+Stats from looking at means from the summaries of wins and losses setss:
+Points scored: 22.5 in wins, 13.6 in losses
+Points Against: 13.8 in wins, 24.1 in losses
+Rush yards For: 113 in wins, 68 in losses     ****
+Rush yards Against: 82 in wins, 137 in losses
+3rd down Percentage For: 40% in wins, 28% in losses
+3rd down Percentage Against: 31% in wins, 41% in losses     ****    
+
+
+
+
+
+
+
+
+```{r}
+steelers %>%
+  summarise_at(vars(Opp_Overall_Record),
+               list(name=mean))
+win %>%
+  summarise_at(vars(Opp_Overall_Record),
+               list(name=mean))
+loss %>%
+  summarise_at(vars(Opp_Overall_Record),
+               list(name=mean))
+```
+
+Bar plots to see what variables effected winning/losing games
+
+```{r}
+library(ggplot2)
+library(plotly)
+p <- ggplot(steelers, aes(x = reorder(Opponent, Rush_Yards_For), y = Rush_Yards_For)) +
+               geom_col(aes(fill=Win_Loss)) + coord_flip()
+ggplotly(p)
+
+p <- ggplot(steelers, aes(x = reorder(Opponent, Rush_Yards_Against), y = Rush_Yards_Against)) +
+                   geom_col(aes(fill=Win_Loss)) + coord_flip()
+ggplotly(p)
+
+p <- ggplot(steelers, aes(x = reorder(Opponent, Sacks), y = Sacks)) +
+                     geom_col(aes(fill=Win_Loss)) + coord_flip()
+ggplotly(p)
+
+p <- ggplot(steelers, aes(x = Third_Down_For_Perc, y = Third_Down_Against_Perc)) +
+     geom_point(aes(color=Win_Loss)) + coord_flip()
+ggplotly(p)
+
+p <- ggplot(steelers, aes(x = reorder(Opponent, Off_Turnovers), y = Off_Turnovers)) +
+  geom_segment( aes(x=Opponent, xend=Opponent, y=0, yend=Off_Turnovers, color = Win_Loss)) +
+  geom_point( aes(color=Win_Loss), size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+ggplotly(p)
+
+p <- ggplot(steelers, aes(x = reorder(Opponent, Def_Turnovers), y =Def_Turnovers)) +
+  geom_segment( aes(x=Opponent, xend=Opponent, y=0, yend=Def_Turnovers, color = Win_Loss)) +
+  geom_point( aes(color=Win_Loss), size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+ggplotly(p)
+```
+
+
+Making a correlation plot with all numeric variables
+```{r}
+library(ellipse)
+library(RColorBrewer)
+correlation <- Steelers_Data
+correlation$Week = NULL
+correlation$Opp_Record = NULL
+correlation$Opponent = NULL
+correlation$Win_Loss = NULL
+correlation$Third_Down_Against = NULL
+correlation$Third_Down_For = NULL
+correlation
+data <- cor(correlation)
+my_colors <- brewer.pal(5, "Spectral")
+my_colors <- colorRampPalette(my_colors)(100)
+ord <- order(data[1, ])
+data_ord <- data[ord, ord]
+plotcorr(data_ord , col=my_colors[data_ord*50+50] , mar=c(0,0,0,0))
+```
+
+```{r}
+p <- ggplot(steelers, aes(x = Sacks, y = Points_For)) +
+                                   geom_point(aes(color=Win_Loss)) + coord_flip()
+ggplotly(p)
+
+p <- ggplot(steelers, aes(x = Def_Turnovers, y = Points_For)) +
+                                   geom_point(aes(color=Win_Loss)) + coord_flip()
+ggplotly(p)
+
+cor(steelers$Sacks, steelers$Points_For)
+cor(steelers$Def_Turnovers, steelers$Points_For)
+```
+
+*** Keys to Victory for the 2020 Pittsburgh Steelers ***
+
+1. Rush Yards > 100 and allow < 100 rush yards
+        5-0 when reaching 100 yards, 2-7 when giving up 100
+2. Sacks >= 4
+        7-2 when recording 4 sacks or more
+3. Win the turnover battle
+        8-3 when winning turnover battle
+4. 3rd Down % > 33% and allow < 33% 3rd Down Percentage
+        5-0 when both these things occur
+      
+Passing yards did not have a big effect on wins/losses
+
+
+
+
